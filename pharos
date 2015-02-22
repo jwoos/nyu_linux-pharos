@@ -35,10 +35,10 @@ __doc__ = 'CUPS backend for popup based printing to Pharos LPD server'
 
 # Imports ============================================
 import sys
-import os
 import socket
 import ConfigParser
 import os
+import json
 import logging
 import logging.config
 import tempfile
@@ -73,6 +73,32 @@ def main():
 		logger.error("Wrong number of arguments (%d). Usage %s job-id user" %(len(sys.argv[0]),  sys.argv[0]))
 		sys.exit(CUPS_BACKEND_OK)
 	
+	# Ensure that Pharos server can be reached
+	command = 'GetPrintJobParameters'
+	deviceURI = os.environ['DEVICE_URI']	
+	devParts = deviceURI.split(':')[1].split('/')
+	host = devParts[len(devParts)-2]
+	port = 28203
+	timeout = 2.0
+	logger.info('Testing connection to Pharos server %s:%d' %(host, port))
+	try:
+		#TODO: do "lpq -S devParts[len(devParts)-2] -P devParts[len(devParts)-1]" instead
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.settimeout(timeout)
+		s.connect((host, port))
+		if s:
+			s.close()
+	except socket.timeout:
+		if s:
+			s.close()
+		logger.error('Could not connect to Pharos server. Error timed out after %d seconds' %timeout)
+		command = ('ShowError Failed to connect to %s:%d: timed out after %d seconds' %(host, port, timeout))
+	except socket.error, (value, message):
+		if s:
+			s.close()
+		logger.error('Could not connect to Pharos server. Error %s' %message)
+		command = ('ShowError Failed to connect to %s:%d: %s' %(host, port, message))
+	
 	# Try to get print job parameters from user
 	host = ''
 	if os.path.exists(programConfigFilePath):
@@ -93,22 +119,18 @@ def main():
 			s.close()
 		logger.error('Could not connect to popup server. Error %s' %message)
 		sys.exit(CUPS_BACKEND_STOP)
-		
-	s.send('GetPrintJobParameters')
+	
+	s.send(command)
 	data = s.recv(1024)
 	s.close()
 	logger.info('Received response = %s' %data)
 	# Split response
-	responseParts = data.split(',')
-	printjobparams = {}
-	for part in responseParts:
-		peices = part.split(':')
-		if len(peices) == 2:
-			printjobparams[peices[0].strip()] = peices[1].strip()
+	printjobparams = json.loads(data)
 	logger.info('Response dictionary = %s' %printjobparams)
 		
 	logger.info('User ID received = %s' %printjobparams["userid"])
 	logger.info('Print Command received = %s' %printjobparams["printjob"])
+	logger.info('Local user received = %s' %printjobparams["localuser"])
 	
 	# Calculate actual LPD queue DEVICE URI
 	logger.info('Processing DEVICE_URI')
@@ -137,10 +159,15 @@ def main():
 		for line in sys.stdin:
 			printFileHndl.writelines(line)
 		printFileHndl.close()
-
+	
 	# check if continue printing
-	if not printjobparams["printjob"] == "yes":		
+	if printjobparams["printjob"] == "no":		
 		logger.info("User chose to cancel job. Exiting")
+		if os.path.exists(printFile):
+			os.unlink(printFile)
+		sys.exit(CUPS_BACKEND_CANCEL)
+	elif not printjobparams["printjob"] == "yes":
+		logger.info("Answer was neither yes nor no. Exiting")
 		if os.path.exists(printFile):
 			os.unlink(printFile)
 		sys.exit(CUPS_BACKEND_CANCEL)
@@ -156,8 +183,21 @@ def main():
 		os.remove(printFile)
 		logger.info('Successfully removed print file: %s' %(printFile))
 	
+	# FIXME: display a notification
+	new_env = os.environ.copy()
+	new_env['USER'] = printjobparams["localuser"]
+	new_env['DBUS_SESSION_BUS_ADDRESS'] = printjobparams["dbus"]
+#	new_env['DBUS_SESSION_BUS_ADDRESS'] = subprocess.check_output("grep -z DBUS_SESSION_BUS_ADDRESS /proc/$(ps -au %s | grep -i 'openbox' | awk '{ print $1 }')/environ | sed -e 's/DBUS_SESSION_BUS_ADDRESS=//')" %new_env['USER'], shell=True)
+	new_env['XAUTHORITY'] = printjobparams["xauth"]
+	new_env['DISPLAY'] = printjobparams["display"]
+	if returnCode == 0:
+		subprocess.Popen(['sudo', '-u', new_env['USER'], 'notify-send', 'Successfully printed %s copy(s) of %s for %s' %(copies, jobTitle, userName)], env=new_env)
+	else:
+		subprocess.Popen(['sudo', '-u', new_env['USER'], 'notify-send', 'Failed to print %s copy(s) of %s for %s' %(copies, jobTitle, userName)], env=new_env)
+	
 	# Terminate gracefully and return the code from lpd printing
 	logger.info('Printing completed')
+	
 	sys.exit(returnCode)
 
 # Main Script ========================================
