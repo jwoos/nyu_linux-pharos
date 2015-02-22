@@ -161,13 +161,8 @@ def main():
 		printFileHndl.close()
 	
 	# check if continue printing
-	if printjobparams["printjob"] == "no":		
+	if not printjobparams["printjob"] == "yes":		
 		logger.info("User chose to cancel job. Exiting")
-		if os.path.exists(printFile):
-			os.unlink(printFile)
-		sys.exit(CUPS_BACKEND_CANCEL)
-	elif not printjobparams["printjob"] == "yes":
-		logger.info("Answer was neither yes nor no. Exiting")
 		if os.path.exists(printFile):
 			os.unlink(printFile)
 		sys.exit(CUPS_BACKEND_CANCEL)

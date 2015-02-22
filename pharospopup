@@ -40,8 +40,14 @@ class wxPopupFrame(wx.Frame):
 			self.titleText = wx.StaticText(self, -1, "Print Job Error")
 			self.userInformationText = wx.StaticText(self, -1, self.command[len('ShowError '):])
 		else:
+			if os.path.exists(programConfigFilePath):
+				config = ConfigParser.ConfigParser({'prompt':'Please enter your myIIT ID*'})
+				config.read(programConfigFilePath)
+				prompt = config.get("popupserver", "prompt")
+			else:
+				prompt = "Please enter your myIIT ID*"
 			self.titleText = wx.StaticText(self, -1, "Print Job Details")
-			self.userInputText = wx.StaticText(self, -1, "Please enter your myIIT ID*")
+			self.userInputText = wx.StaticText(self, -1, prompt)
 			self.userInputTextCtrl = wx.TextCtrl(self, -1, "",  style=wx.TE_PROCESS_ENTER)
 			self.userInformationText = wx.StaticText(self, -1, "* This ID will be used at the release station to release your print job")
 			self.printButton = wx.Button(self, -1, "Print")
