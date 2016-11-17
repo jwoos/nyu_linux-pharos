@@ -1,4 +1,5 @@
 #!/usr/bin/python2
+
 # Script Name: pharos-uninstall.py
 # Script Function:
 #	This script will uninstall pharos remote printing from the system.
@@ -9,8 +10,8 @@
 #	4. Remove the uninstall script from /usr/local/bin/
 #	5. Remove the users desktop environment autorun settings for running pharospoup at login
 #	6. Delete the print queues that use pharos backend
-#	
-# Usage: 
+#
+# Usage:
 #	$sudo python pharos-uninstall
 #		This will uninstall the pharos remote printing
 #
@@ -32,16 +33,16 @@ cleanupFile = '/tmp/pharoscleanup.sh'
 def createCleanupFile(cleanupFile):
 	"""
 	Creates a cleanup file
-	"""	
+	"""
 	pharosUninstallerExe = '/usr/local/bin/pharos-uninstall'
 	logger.info('Creating cleanup file %s' %cleanupFile)
 	cleanupFileHandle = open(cleanupFile, 'w')
-	cleanupFileHandle.writelines('#!/bin/sh\n')	
+	cleanupFileHandle.writelines('#!/bin/sh\n')
 	cleanupFileHandle.writelines('sleep 5s\n')
-	cleanupFileHandle.writelines('rm -f %s\n' %pharosUninstallerExe)	
+	cleanupFileHandle.writelines('rm -f %s\n' %pharosUninstallerExe)
 	cleanupFileHandle.close()
 	logger.info('successfully created cleanup file %s' %cleanupFile)
-	
+
 	logger.info('setting execution bit on file %s' %cleanupFile)
 	try:
 		chmod = subprocess.call(['chmod', '+x', cleanupFile])
@@ -75,20 +76,20 @@ logger.addHandler(ch)
 sys.path.append(os.getcwd())
 if os.path.exists(uninstallerSharedLibraryDIR):
 	sys.path.append(uninstallerSharedLibraryDIR)
-		
-try:	
+
+try:
 	from printerutils import PrinterUtility
 except:
-	logger.error('Cannot import module printerutil')	
+	logger.error('Cannot import module printerutil')
 	sys.exit(1)
 
-try:	
+try:
 	from processutils import ProcessUtility
 except:
-	logger.error('Cannot import module processutil')	
+	logger.error('Cannot import module processutil')
 	sys.exit(1)
 
-try:	
+try:
 	from pharosuninstall import PharosUninstaller
 except:
 	logger.error('Cannot import module printerutil')

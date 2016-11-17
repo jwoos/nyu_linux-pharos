@@ -24,7 +24,7 @@ class ProcessUtility:
 		Constructor
 		"""
 		self.logger = log
-	
+
 	def isProcessRunning(self, processName):
 		"""
 		Checks if the given process is running
@@ -37,21 +37,21 @@ class ProcessUtility:
 			self.logger.error('Could not get list of running processes')
 			self.logger.error('Error: %s Message: %s' %(errCode, errMessage))
 			return False
-			
+
 		processes = ps.split('\n')
 		processFound = False
 		for process in processes:
 			if re.search(processName, process):
 				self.logger.info('%s is running with details: %s ' %(processName, process))
 				processFound = True
-				break			
+				break
 		if processFound:
 			self.logger.info('%s is running.' %processName)
 			return True
 		else:
 			self.logger.info('%s is not running.' %processName)
 			return False
-		
+
 	def killProcess(self, processName):
 		"""
 		kills a running process with given name
@@ -60,11 +60,11 @@ class ProcessUtility:
 		process = subprocess.Popen(["pgrep", processName], stdout=subprocess.PIPE)
 		for pid in process.stdout:
 			self.logger.info('Trying to kill process with PID %s' %pid)
-			os.kill(int(pid), signal.SIGTERM)			
+			os.kill(int(pid), signal.SIGTERM)
 			self.logger.info('Waiting for 5 seconds after sending Terminate signal to process PID %s' %pid)
 			# Sleep for 5 seconds
 			time.sleep(5)
-			
+
 		if self.isProcessRunning(processName):
 			self.logger.warn('Process %s could not be killed' %processName)
 			return False

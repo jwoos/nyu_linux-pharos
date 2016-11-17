@@ -1,4 +1,5 @@
 #!/usr/bin/python2
+
 # Script Name: pharos
 # Script Function:
 #	This is a CUPS backend for the Pharos Remote Printing LPD Server.
@@ -11,19 +12,19 @@
 # See http://www.openprinting.org/cups-doc.html and the additional
 # instructions below.
 #
-# Usage: 
+# Usage:
 #
 # cp pharos /usr/lib/cups/backend/
 # chmod 755 /usr/lib/cups/backend/pharos
 # killall -HUP cupsd (or "/etc/init.d/cups restart")
 # lpadmin -p <queue name> -E -v pharos://<print server address>/<print queue>
 #
-# with 
+# with
 #   <print server address>:     The DNS name or IP address of the print server
 #   <print queue>:		The name of the LPD queue on the print server
 # Example URIs:
 # pharos://printserver.university.edu/HP_LaserJet
-# 
+#
 #	This will print to a Pharos Uniprint Print server with DNS name printserver.university.edu and print queue HP_LaserJet
 #
 # Author: Junaid Ali
@@ -72,10 +73,10 @@ def main():
 		sys.stdout.flush()
 		logger.error("Wrong number of arguments (%d). Usage %s job-id user" %(len(sys.argv[0]),  sys.argv[0]))
 		sys.exit(CUPS_BACKEND_OK)
-	
+
 	# Ensure that Pharos server can be reached
 	command = 'GetPrintJobParameters'
-	deviceURI = os.environ['DEVICE_URI']	
+	deviceURI = os.environ['DEVICE_URI']
 	devParts = deviceURI.split(':')[1].split('/')
 	host = devParts[len(devParts)-2]
 	port = 28203
@@ -98,7 +99,7 @@ def main():
 			s.close()
 		logger.error('Could not connect to Pharos server. Error %s' %message)
 		command = ('ShowError Failed to connect to %s:%d: %s' %(host, port, message))
-	
+
 	# Try to get print job parameters from user
 	host = ''
 	if os.path.exists(programConfigFilePath):
@@ -109,7 +110,7 @@ def main():
 		logger.info('Setting up the server connection port to %d' %port)
 	else:
 		port = 50000
-	
+
 	logger.info('Trying to connect to host %s on port %d' %(host, port))
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -119,7 +120,7 @@ def main():
 			s.close()
 		logger.error('Could not connect to popup server. Error %s' %message)
 		sys.exit(CUPS_BACKEND_STOP)
-	
+
 	s.send(command)
 	data = s.recv(1024)
 	s.close()
@@ -127,14 +128,14 @@ def main():
 	# Split response
 	printjobparams = json.loads(data)
 	logger.info('Response dictionary = %s' %printjobparams)
-		
+
 	logger.info('User ID received = %s' %printjobparams["userid"])
 	logger.info('Print Command received = %s' %printjobparams["printjob"])
 	logger.info('Local user received = %s' %printjobparams["localuser"])
-	
+
 	# Calculate actual LPD queue DEVICE URI
 	logger.info('Processing DEVICE_URI')
-	deviceURI = os.environ['DEVICE_URI']	
+	deviceURI = os.environ['DEVICE_URI']
 	devParts = deviceURI.split(':')[1].split('/')
 	deviceURI = 'lpd://' + devParts[len(devParts)-2] + '/' + devParts[len(devParts)-1]
 	logger.info('lpd print queue uri = %s' % deviceURI )
@@ -159,25 +160,25 @@ def main():
 		for line in sys.stdin:
 			printFileHndl.writelines(line)
 		printFileHndl.close()
-	
+
 	# check if continue printing
-	if not printjobparams["printjob"] == "yes":		
+	if not printjobparams["printjob"] == "yes":
 		logger.info("User chose to cancel job. Exiting")
 		if os.path.exists(printFile):
 			os.unlink(printFile)
 		sys.exit(CUPS_BACKEND_CANCEL)
 
-	logger.info('Job Arguments (Job ID: %s, User Name: %s, Job Title: %s, Copies: %s, Print Options: %s, Print File: %s)' %(jobID,  userName,  jobTitle,  copies,  printOptions,  printFile))	
+	logger.info('Job Arguments (Job ID: %s, User Name: %s, Job Title: %s, Copies: %s, Print Options: %s, Print File: %s)' %(jobID,  userName,  jobTitle,  copies,  printOptions,  printFile))
 	command = [os.path.join(cupsBackendDIR, 'lpd'), jobID,  printjobparams["userid"],  jobTitle,  copies,  printOptions,  printFile]
 	logger.info("Running Command with pipe separated arguments: " + "|".join(command))
 	returnCode = subprocess.call(command)
 	logger.info('Command return code = %d' %(returnCode))
-	
+
 	# Delete the temp file used
 	if os.path.exists(printFile):
 		os.remove(printFile)
 		logger.info('Successfully removed print file: %s' %(printFile))
-	
+
 	# FIXME: display a notification
 	new_env = os.environ.copy()
 	new_env['USER'] = printjobparams["localuser"]
@@ -189,16 +190,16 @@ def main():
 		subprocess.Popen(['sudo', '-u', new_env['USER'], 'notify-send', 'Successfully printed %s copy(s) of %s for %s' %(copies, jobTitle, userName)], env=new_env)
 	else:
 		subprocess.Popen(['sudo', '-u', new_env['USER'], 'notify-send', 'Failed to print %s copy(s) of %s for %s' %(copies, jobTitle, userName)], env=new_env)
-	
+
 	# Terminate gracefully and return the code from lpd printing
 	logger.info('Printing completed')
-	
+
 	sys.exit(returnCode)
 
 # Main Script ========================================
 try:
 	logging.config.fileConfig(programConfigFilePath)
-	logger = logging.getLogger('pharos')	    
+	logger = logging.getLogger('pharos')
 except (TypeError, ConfigParser.NoSectionError):
 	syslog.syslog(syslog.LOG_ERR, '%s could not instantiate logging using config file %s. Exiting' %(sys.argv[0], programConfigFilePath))
 	sys.exit(CUPS_BACKEND_STOP)

@@ -1,4 +1,5 @@
 #!/usr/bin/python2
+
 # Script Name: uninstall-pharos.py
 # Script Function:
 #	This script will uninstall pharos remote printing from the system.
@@ -9,8 +10,8 @@
 #	4. Remove the uninstall script from /usr/local/bin/
 #	5. Remove the users desktop environment autorun settings for running pharospoup at login
 #	6. Delete the print queues that use pharos backend
-#	
-# Usage: 
+#
+# Usage:
 #	$sudo python uninstall-pharos
 #		This will uninstall the pharos remote printing
 #
@@ -46,7 +47,7 @@ class PharosUninstaller:
 		self.logger = log
 		self.printerUtility = printerUtil
 		self.processUtility = processUtil
-		
+
 	def uninstallPharosPrinters(self):
 		"""
 		Uninstall Pharos Printers
@@ -62,24 +63,24 @@ class PharosUninstaller:
 					self.logger.info('Printer %s is a pharos printer' %printer)
 					pharosPrinter.append(printer)
 				else:
-					self.logger.info('Printer %s is not a pharos printer' %printer)				
+					self.logger.info('Printer %s is not a pharos printer' %printer)
 			else:
 				self.logger.warn('could not find device-uri in printer settings %s' %printerSettings)
-		
+
 		allPharosPrintersDeleted = True
 		if len(pharosPrinter) > 0:
-			self.logger.info('There are total %s pharos printers installed on the system.' %len(pharosPrinter))			
+			self.logger.info('There are total %s pharos printers installed on the system.' %len(pharosPrinter))
 			for printer in pharosPrinter:
 				self.logger.info('Trying to delete printer %s' %printer)
 				if self.printerUtility.deletePrinter(printer):
 					self.logger.info('Printer %s successfully deleted' %printer)
 				else:
 					self.logger.info('Could not delete printer %s' %printer)
-					allPharosPrintersDeleted = False			
+					allPharosPrintersDeleted = False
 		else:
 			self.logger.warn('There are no pharos printers installed on the system')
 		return allPharosPrintersDeleted
-		
+
 	def uninstallBackend(self):
 		"""
 		Uninstall Pharos Backend
@@ -94,19 +95,19 @@ class PharosUninstaller:
 				logger.info('Successfully removed backend file: %s' %(backendFile))
 			except:
 				self.logger.info('Could not remove backend file %s' %backendFile)
-		
+
 		if os.path.exists(backendFile):
 			self.logger.error('Could not remove backend file %s' %backendFile)
 			return False
 		else:
 			return True
-		
+
 	def uninstallPharosPopupServer(self):
 		"""
 		Uninstall Pharos Popup Server
 		"""
 		self.logger.info('Uninstall Pharos Popup Server')
-		
+
 		# Kill popup server if running
 		self.logger.info('Checking if popup server %s is running' %pharosPopupServerFileName)
 		if self.processUtility.isProcessRunning(pharosPopupServerFileName):
@@ -115,10 +116,10 @@ class PharosUninstaller:
 				self.logger.info('Popup server was successfully terminated')
 			else:
 				self.logger.error('Popup server could not be terminated. Popup server files will not be removed')
-				return False		
+				return False
 		else:
 			self.logger.info('Popup server is not running')
-		
+
 		# remove popup server files
 		removedAllFiles = True
 		self.logger.info('Checking for poup server executable')
@@ -133,7 +134,7 @@ class PharosUninstaller:
 				removedAllFiles = False
 		else:
 			self.logger.warn('Popup server executable %s was already removed' %popupServerExecutable)
-			
+
 		# remove pharos config file
 		self.logger.info('Checking for pharos config file')
 		pharosConfigFilePath = os.path.join(pharosConfigInstallDIR, pharosConfigFileName)
@@ -147,19 +148,19 @@ class PharosUninstaller:
 				removedAllFiles = False
 		else:
 			self.logger.warn('Pharos config file %s was already removed' %pharosConfigFilePath)
-							
+
 		return removedAllFiles
-		
+
 	def removePopupServerFromGnomeSession(self):
 		"""
 		Removes the popup server from GNOME session manager
 		"""
 		self.logger.info('Removing popup server from GNOME session manager')
 		removedAllAutoStartFiles = True
-		
+
 		# Delete file from all users
 		self.logger.info('Getting list of current users')
-		currentUsers = os.listdir('/home')	
+		currentUsers = os.listdir('/home')
 		for user in currentUsers:
 			self.logger.info('Checking autostart file for user %s' %user)
 			pharosAutoStartFile = os.path.join('/home', user, '.config', 'autostart', 'pharospopup.desktop')
@@ -170,8 +171,8 @@ class PharosUninstaller:
 					self.logger.info('Sucessfully removed file %s' %pharosAutoStartFile)
 				except:
 					self.logger.warn('Could not delete file %s' %pharosAutoStartFile)
-					removedAllAutoStartFiles = False					
-		
+					removedAllAutoStartFiles = False
+
 		# Delete file from root user
 		rootAutoStartFile = os.path.join('/root', '.config', 'autostart', 'pharospopup.desktop')
 		self.logger.info('Checking autostart file for root')
@@ -183,7 +184,7 @@ class PharosUninstaller:
 			except:
 				self.logger.warn('Could not delete file %s' %rootAutoStartFile)
 				removedAllAutoStartFiles = False
-		
+
 		# Delete from future users
 		skelAutoStartFile = os.path.join('/etc/', 'skel', '.config', 'autostart', 'pharospopup.desktop')
 		self.logger.info('Checking autostart file for future users')
@@ -195,19 +196,19 @@ class PharosUninstaller:
 			except:
 				self.logger.warn('Could not delete file %s' %skelAutoStartFile)
 				removedAllAutoStartFiles = False
-			
+
 		return removedAllAutoStartFiles
-		
+
 	def removePopupServerFromKDESession(self):
 		"""
 		Removes the popup server from KDE session manager
 		"""
 		self.logger.info('Removing popup server from KDE session manager')
 		removedAllAutoStartFiles = True
-		
+
 		# Delete file from all users
 		self.logger.info('Getting list of current users')
-		currentUsers = os.listdir('/home')	
+		currentUsers = os.listdir('/home')
 		for user in currentUsers:
 			self.logger.info('Checking autostart file for user %s' %user)
 			pharosAutoStartFile = os.path.join('/home', user, '.kde', 'Autostart', 'pharospopup')
@@ -218,8 +219,8 @@ class PharosUninstaller:
 					self.logger.info('Sucessfully removed file %s' %pharosAutoStartFile)
 				except:
 					self.logger.warn('Could not delete file %s' %pharosAutoStartFile)
-					removedAllAutoStartFiles = False					
-		
+					removedAllAutoStartFiles = False
+
 		# Delete file from root user
 		rootAutoStartFile = os.path.join('/root', '.kde', 'Autostart', 'pharospopup')
 		self.logger.info('Checking autostart file for root')
@@ -231,7 +232,7 @@ class PharosUninstaller:
 			except:
 				self.logger.warn('Could not delete file %s' %rootAutoStartFile)
 				removedAllAutoStartFiles = False
-		
+
 		# Delete from future users
 		skelAutoStartFile = os.path.join('/etc/skel', '.kde', 'Autostart', 'pharospopup')
 		self.logger.info('Checking autostart file for future users')
@@ -243,9 +244,9 @@ class PharosUninstaller:
 			except:
 				self.logger.warn('Could not delete file %s' %skelAutoStartFile)
 				removedAllAutoStartFiles = False
-			
-		return removedAllAutoStartFiles		
-			
+
+		return removedAllAutoStartFiles
+
 	def uninstallStartupEntries(self):
 		"""
 		Uninstalls the startup entries from the session manager
@@ -273,7 +274,7 @@ class PharosUninstaller:
 			self.logger.warn('Users window manager is not recognized. Could not remove login scripts for popupserver. Please use your window manager to remove startup script %s' %os.path.join(popupServerInstallDIR,pharosPopupServerFileName))
 		self.logger.info('Completed removing pharos popup server from login')
 		return returnCode
-		
+
 	def uninstallLogFiles(self):
 		"""
 		Remove log files used
@@ -288,8 +289,8 @@ class PharosUninstaller:
 			except:
 				self.logger.error('Could not remove directory %s' %pharosLogDIR)
 				return False
-		
-		return True		
+
+		return True
 
 	def uninstall(self):
 		""""
@@ -307,21 +308,21 @@ class PharosUninstaller:
 				returnCode = False
 		else:
 			self.logger.warn('All pharos printers could not be deleted. Will not be removing the CUPS pharos backend')
-		
+
 		print('Uninstalling pharos popup server')
 		if self.uninstallPharosPopupServer():
 			self.logger.info('Successfully removed pharos popup file')
 		else:
 			self.logger.error('Could not remove pharos popup file')
 			returnCode = False
-		
+
 		print('Uninstalling autostart entries from GUI session manager')
 		if self.uninstallStartupEntries():
 			self.logger.info('Successfully removed startup entries for pharos popup')
 		else:
 			self.logger.error('Could not remove startup entries for pharos popup')
 			returnCode = False
-		
+
 		print('Uninstalling log files')
 		if self.uninstallLogFiles():
 			self.logger.info('Successfully removed pharos log files')
