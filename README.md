@@ -30,7 +30,6 @@ sudo python2 setup.py
 You will be presented with an EULA (if present) and if you accept it the installation will continue.
 
 ### Uninstalling
-==============
 The installer will add an uninstallation program to `/usr/local/bin/pharos-uninstall`
 
 ```
