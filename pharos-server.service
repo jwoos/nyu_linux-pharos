@@ -1,0 +1,9 @@
+[Unit]
+Description=Start Pharos popup server
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/pharospopup
+
+[Install]
+WantedBy=multi-user.target
